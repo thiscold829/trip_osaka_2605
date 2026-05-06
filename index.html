@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>오사카 가족 여행</title>
+    <style>
+        /* Apple HIG Style Base */
+        :root {
+            --bg-color: #F5F5F7;
+            --card-bg: #FFFFFF;
+            --text-primary: #1D1D1F;
+            --text-secondary: #86868B;
+            --accent-color: #007AFF;
+            --accent-light: rgba(0, 122, 255, 0.1);
+            --nav-bg: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(0, 0, 0, 0.05);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --gray-note-bg: #F2F2F7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            line-height: 1.5;
+        }
+
+        /* 시스템 인용구 렌더링 방지 (화면 노출 완벽 차단) */
+        .cite-hidden { display: none !important; }
+
+        #app {
+            width: 100%;
+            max-width: 480px;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.1);
+            padding-bottom: 90px;
+            overflow-x: hidden;
+        }
+
+        /* Header (Glassmorphism) */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1.2rem 1.2rem 0.8rem;
+            border-bottom: 0.5px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        
+        header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        /* Day Selector */
+        .day-selector {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 12px 1.2rem;
+            scrollbar-width: none;
+            border-bottom: 0.5px solid var(--border-color);
+            margin: 0 -1.2rem 1rem;
+        }
+        .day-selector::-webkit-scrollbar { display: none; }
+        
+        .day-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+        .day-btn.active {
+            background: var(--text-primary);
+            color: #FFFFFF;
+            border-color: var(--text-primary);
+        }
+
+        /* Main Content Area */
+        .tab-content {
+            display: none;
+            padding: 1rem 1.2rem;
+            animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Soft Gray Note Box */
+        .note-box {
+            background: var(--gray-note-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 1.5rem;
+        }
+        .note-box h3 {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .note-box p {
+            font-size: 0.85rem;
+            color: #666668;
+            line-height: 1.4;
+        }
+
+        /* Timeline UI */
+        .timeline {
+            position: relative;
+            padding-left: 24px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            bottom: 0;
+            left: 5px;
+            width: 2px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 2px;
+        }
+        .time-node {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        .time-node::before {
+            content: '';
+            position: absolute;
+            left: -23.5px;
+            top: 6px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            border: 3px solid var(--bg-color);
+            box-shadow: 0 0 0 1px var(--accent-color);
+        }
+        .time-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 4px;
+            display: inline-block;
+            background: var(--accent-light);
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+        .time-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            letter-spacing: -0.01em;
+        }
+        .time-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Horizontal Carousel (Restaurants in Timeline) */
+        .carousel-wrapper { margin: 12px -1.2rem 0; }
+        .carousel {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 12px;
+            padding: 4px 1.2rem 16px;
+            scrollbar-width: none;
+        }
+        .carousel::-webkit-scrollbar { display: none; }
+        
+        .rest-card {
+            flex: 0 0 220px;
+            scroll-snap-align: center;
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+        .rest-card:active { transform: scale(0.98); }
+        .rest-badge {
+            align-self: flex-start;
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: var(--gray-note-bg);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .rest-name {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .rest-loc { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; }
+        .rest-note {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            background: var(--accent-light);
+            padding: 6px 8px;
+            border-radius: 8px;
+            margin-top: auto;
+            font-weight: 500;
+        }
+
+        /* Grouped List (For Restaurant Tab & Info Tab) */
+        .group-section { margin-bottom: 24px; }
+        .group-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            padding-left: 4px;
+            color: var(--text-primary);
+        }
+        .group-list {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .group-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            color: inherit;
+        }
+        .group-item:last-child { border-bottom: none; }
+        .group-item:active { background: #FAFAFC; }
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .item-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+        .item-badge { font-size: 0.7rem; background: var(--gray-note-bg); padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); font-weight: 600; }
+        .item-desc { font-size: 0.85rem; color: var(--text-secondary); }
+        
+        .info-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .info-item:last-child { border-bottom: none; }
+        .info-item strong { color: var(--text-primary); display: block; margin-bottom: 2px; }
+        .info-item span { font-size: 0.9rem; color: var(--text-secondary); }
+
+        /* Bottom Tab Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 480px;
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0 24px 0;
+            z-index: 100;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 600;
+            width: 33%;
+        }
+        .nav-item.active { color: var(--accent-color); }
+        .nav-icon { width: 24px; height: 24px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Header -->
+    <header>
+        <h1 id="header-title">오사카 가족 여행<span class="cite-hidden">[cite: 4]</span></h1>
+        <p>2026.05.15 - 05.18 | 3박 4일<span class="cite-hidden">[cite: 4]</span></p>
+    </header>
+
+    <!-- 1. 일정 탭 -->
+    <div id="view-itinerary" class="tab-content active">
+        <div class="day-selector">
+            <div class="day-btn active" onclick="showDay('day1')">15일 (금)</div>
+            <div class="day-btn" onclick="showDay('day2')">16일 (토)</div>
+            <div class="day-btn" onclick="showDay('day3')">17일 (일)</div>
+            <div class="day-btn" onclick="showDay('day4')">18일 (월)</div>
+        </div>
+
+        <!-- DAY 1 -->
+        <div id="day1" class="day-content">
+            <div class="note-box">
+                <h3>💡 Day 1 요약 및 조언<span class="cite-hidden">[cite: 4]</span></h3>
+                <p>도착 당일은 이동 피로를 감안해 가볍게 타키미코지와 스카이빌딩 야경으로 오사카의 첫인상을 즐기는 코스입니다.<span class="cite-hidden">[cite: 4]</span> 공중정원 전망대는 20시 이후 입장 시 일몰 후 야경이 최적입니다.<span class="cite-hidden">[cite: 4]</span></p>
+            </div>
+            <div class="timeline">
+                <div class="time-node">
+                    <span class="time-label">09:40 - 11:50</span>
+                    <h4 class="time-title">인천 출발 ➔ 간사이 도착<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">에어부산 BX164. 수하물 수취 약 40~60분 소요.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">13:14 - 14:00</span>
+                    <h4 class="time-title">오사카역 도착 및 점심<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">JR 하루카 탑승. 역 도착 후 인근에서 요기.<span class="cite-hidden">[cite: 4]</span></p>
+                    <div class="carousel-wrapper">
+                        <div class="carousel">
+                            <a href="https://www.google.com/maps/search/?api=1&query=멘야+카치도키" target="_blank" class="rest-card">
+                                <span class="rest-badge">츠케멘</span>
+                                <div class="rest-name">멘야 카치도키<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Kita Ward, Shibata<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">우메다 도보권<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=라멘+카모토네기+우메다" target="_blank" class="rest-card">
+                                <span class="rest-badge">오리라멘</span>
+                                <div class="rest-name">라멘 카모토네기<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">이노게이트오사카 3F<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">역안 즉시 가능<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=하나다코" target="_blank" class="rest-card">
+                                <span class="rest-badge">다코야키</span>
+                                <div class="rest-name">하나다코<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">신우메다 식당가<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">가볍게 요기<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">15:00 - 16:00</span>
+                    <h4 class="time-title">체크인 및 휴식<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">한큐 그란레스파이어스 입실. 16:00 로비 집합.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">16:30 - 18:00</span>
+                    <h4 class="time-title">타키미코지 및 저녁 식사<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">레트로 분위기 골목에서 저녁 식사.<span class="cite-hidden">[cite: 4]</span></p>
+                    <div class="carousel-wrapper">
+                        <div class="carousel">
+                            <a href="https://www.google.com/maps/search/?api=1&query=야키니쿠+리키마루+우메다점" target="_blank" class="rest-card">
+                                <span class="rest-badge">야키니쿠</span>
+                                <div class="rest-name">야키니쿠 리키마루<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Sonezaki 2-8-9 B1F<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">이자카야 분위기<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=야마모토+네기야키+에스트점" target="_blank" class="rest-card">
+                                <span class="rest-badge">오코노미야키</span>
+                                <div class="rest-name">야마모토 네기야키<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">에스트 1F<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">현지인 맛집<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=후와토로+오코노미야키" target="_blank" class="rest-card">
+                                <span class="rest-badge">오코노미야키</span>
+                                <div class="rest-name">후와토로<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Sonezaki 2-5-24 2F<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">분위기 좋음<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">20:00 - 22:30</span>
+                    <h4 class="time-title">공중정원 야경 & 마무리<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">야경 감상 후 편의점 투어 및 호텔 복귀.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 2 -->
+        <div id="day2" class="day-content" style="display: none;">
+            <div class="note-box">
+                <h3>💡 Day 2 요약 및 조언<span class="cite-hidden">[cite: 4]</span></h3>
+                <p>교토 버스 투어 일정입니다. 07:55 미팅 완료 및 08:00 정시 출발이 필수입니다. 닛폰바시역 2번 출구 앞 '아이트립 가이드' 깃발을 찾아주세요.<span class="cite-hidden">[cite: 4]</span></p>
+            </div>
+            <div class="timeline">
+                <div class="time-node">
+                    <span class="time-label">07:20 - 08:00</span>
+                    <h4 class="time-title">미팅 장소 도착 및 출발<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">호텔 출발 후 닛폰바시역 도착. 08:00 정시 출발.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">09:30 - 11:00</span>
+                    <h4 class="time-title">후시미이나리 신사<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">천본토리와 여우신사 관람.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">11:30 - 13:30</span>
+                    <h4 class="time-title">아라시야마 (자유 중식)<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">도월교 주변 두부요리, 텐류지 앞 우동/소바, 혹은 가이드에게 식당 추천을 요청하세요.<span class="cite-hidden">[cite: 3]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">14:00 - 15:00</span>
+                    <h4 class="time-title">금각사 (킨카쿠지)<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">금빛 누각과 연못 반영 감상.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">15:30 - 17:30</span>
+                    <h4 class="time-title">청수사 (기요미즈데라)<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">산넨자카/니넨자카 골목 산책.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">18:30 - 21:00</span>
+                    <h4 class="time-title">오사카 복귀 및 저녁 식사<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">도보 피로도를 고려해 호젠지 골목 인근을 추천합니다.<span class="cite-hidden">[cite: 3]</span></p>
+                    <div class="carousel-wrapper">
+                        <div class="carousel">
+                            <a href="https://www.google.com/maps/search/?api=1&query=마츠자카규+야키니쿠+M+호젠지점" target="_blank" class="rest-card">
+                                <span class="rest-badge">프리미엄 와규</span>
+                                <div class="rest-name">마츠자카규 M 호젠지<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Namba 1-5-24<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">사전 예약 필수<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=코코로+야키니쿠" target="_blank" class="rest-card">
+                                <span class="rest-badge">야키니쿠</span>
+                                <div class="rest-name">코코로 야키니쿠<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Higashishinsaibashi 2-3-9<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">예약 권장<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=현품+호젠지+총본점" target="_blank" class="rest-card">
+                                <span class="rest-badge">복어전골</span>
+                                <div class="rest-name">현품 호젠지 총본점<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Namba 1-1-13<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">오사카 전통<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=스시+카츠야" target="_blank" class="rest-card">
+                                <span class="rest-badge">스시</span>
+                                <div class="rest-name">스시 카츠야<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Souemoncho 2-23<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">고급 분위기<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 3 -->
+        <div id="day3" class="day-content" style="display: none;">
+            <div class="note-box">
+                <h3>💡 Day 3 요약 및 조언<span class="cite-hidden">[cite: 4]</span></h3>
+                <p>오사카성, 구로몬시장, 신사이바시, 도톤보리를 잇는 문화재와 번화가의 핵심을 찌르는 오사카 왕도 코스입니다.<span class="cite-hidden">[cite: 4]</span></p>
+            </div>
+            <div class="timeline">
+                <div class="time-node">
+                    <span class="time-label">09:00 - 10:30</span>
+                    <h4 class="time-title">호텔 조식 후 오사카성 이동<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">전날 피로 회복을 위해 여유롭게 출발합니다.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">10:30 - 12:00</span>
+                    <h4 class="time-title">오사카성 천수각 내부 입장<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">단순 외관 관람이 아닌 내부 고증(갑옷, 도검)을 직접 확인하는 것을 추천합니다. 한국의 경복궁과 일본 문화재 관리의 차이를 체감할 수 있습니다.<span class="cite-hidden">[cite: 4]</span></p>
+                    <div class="carousel-wrapper">
+                        <div class="carousel">
+                            <a href="https://www.google.com/maps/search/?api=1&query=우나기도코로+우마미" target="_blank" class="rest-card">
+                                <span class="rest-badge">장어덮밥</span>
+                                <div class="rest-name">우나기도코로 우마미<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Morinomiyachuo 1-16-20<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">예약 가능 / 고급스러움<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=삿포로+수프카레+잭" target="_blank" class="rest-card">
+                                <span class="rest-badge">수프카레</span>
+                                <div class="rest-name">삿포로 수프카레 잭<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">RK빌 1F<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">독특한 경험<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=도쿠마사+모리노미야점" target="_blank" class="rest-card">
+                                <span class="rest-badge">카레우동</span>
+                                <div class="rest-name">도쿠마사<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Morinomiyachuo 1-16-22<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">현지인 즐겨찾는 곳<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">13:30 - 15:00</span>
+                    <h4 class="time-title">구로몬 시장<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">시식 및 해산물 구경. 30~40분 소요.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">15:00 - 18:00</span>
+                    <h4 class="time-title">신사이바시 ➔ 도톤보리<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">일직선 동선으로 이동 효율이 좋습니다. 글리코 사인 인증샷은 일몰 후가 예쁩니다.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">18:00 - 21:00</span>
+                    <h4 class="time-title">저녁 식사 및 야경 산책<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">2일차 미방문 식당 혹은 100년 전통 우동을 추천합니다.<span class="cite-hidden">[cite: 3]</span></p>
+                    <div class="carousel-wrapper">
+                        <div class="carousel">
+                            <a href="https://www.google.com/maps/search/?api=1&query=우사미테이+마츠바야" target="_blank" class="rest-card">
+                                <span class="rest-badge">기츠네우동</span>
+                                <div class="rest-name">우사미테이 마츠바야<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Minamisenba 3-8-1<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">오사카 100년 전통<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                            <a href="https://www.google.com/maps/search/?api=1&query=후쿠노마이+신사이바시점" target="_blank" class="rest-card">
+                                <span class="rest-badge">복어전골</span>
+                                <div class="rest-name">후쿠노마이<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">Shinsaibashisuji 2-2-3<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">오사카 전통 / 2일차 대안<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 4 -->
+        <div id="day4" class="day-content" style="display: none;">
+            <div class="note-box">
+                <h3>💡 Day 4 요약 및 조언<span class="cite-hidden">[cite: 4]</span></h3>
+                <p>여유로운 마지막 아침입니다. 12:50 출발 기준 공항에 10:45까지 도착이 필수이므로, 09:30 오사카역 출발을 엄수해 주세요.<span class="cite-hidden">[cite: 4]</span></p>
+            </div>
+            <div class="timeline">
+                <div class="time-node">
+                    <span class="time-label">07:30 - 09:00</span>
+                    <h4 class="time-title">우메다 지하상가 쇼핑 & 조식<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">화이티 우메다에서 기념품 쇼핑 및 가벼운 아침을 해결합니다.<span class="cite-hidden">[cite: 4]</span></p>
+                    <div class="carousel-wrapper">
+                        <div class="carousel">
+                            <a href="https://www.google.com/maps/search/?api=1&query=하나다코" target="_blank" class="rest-card">
+                                <span class="rest-badge">다코야키</span>
+                                <div class="rest-name">하나다코<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">신우메다 식당가<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">이른 아침 영업<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                             <a href="https://www.google.com/maps/search/?api=1&query=규카츠+모토무라+루쿠아점" target="_blank" class="rest-card">
+                                <span class="rest-badge">규카츠</span>
+                                <div class="rest-name">규카츠 모토무라<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-loc">루쿠아오사카 10F<span class="cite-hidden">[cite: 3]</span></div>
+                                <div class="rest-note">오픈 시간 확인 요망<span class="cite-hidden">[cite: 3]</span></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">09:00 - 09:30</span>
+                    <h4 class="time-title">체크아웃 및 이동<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">오사카역으로 이동 후 09:30 JR 하루카 탑승.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+                <div class="time-node">
+                    <span class="time-label">10:45 - 12:50</span>
+                    <h4 class="time-title">간사이공항 도착 및 탑승<span class="cite-hidden">[cite: 4]</span></h4>
+                    <p class="time-desc">공항 내 자율 식사 후 에어부산 BX171 탑승.<span class="cite-hidden">[cite: 4]</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 맛집 탭 (Directory) -->
+    <div id="view-restaurants" class="tab-content">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px;">일정 중 고려할 수 있는 식당 전체 리스트입니다. 카드를 탭하면 구글 지도로 연결됩니다.<span class="cite-hidden">[cite: 3]</span></p>
+        
+        <!-- Day 1 Group -->
+        <div class="group-section">
+            <h2 class="group-title">DAY 1 (5/15 금)</h2>
+            <div class="group-list">
+                <a href="https://www.google.com/maps/search/?api=1&query=멘야+카치도키" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">멘야 카치도키<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">점심 / 츠케멘</span></div>
+                    <div class="item-desc">우메다 도보권 라멘 스타일<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=라멘+카모토네기+우메다" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">라멘 카모토네기 우메다<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">점심 / 오리라멘</span></div>
+                    <div class="item-desc">이노게이트오사카 3F, 역안에서 바로<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=야키니쿠+리키마루+우메다점" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">야키니쿠 리키마루<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 타키미코지</span></div>
+                    <div class="item-desc">예약 권장, 이자카야 분위기 야키니쿠<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=야마모토+네기야키+에스트점" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">야마모토 네기야키<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 타키미코지</span></div>
+                    <div class="item-desc">에스트 1F 현지인 오코노미야키 맛집<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Day 2 Group -->
+        <div class="group-section">
+            <h2 class="group-title">DAY 2 (5/16 토)</h2>
+            <div class="group-list">
+                <a href="https://www.google.com/maps/search/?api=1&query=코코로+야키니쿠" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">코코로 야키니쿠<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 도톤보리</span></div>
+                    <div class="item-desc">숯불 야키니쿠, 예약 가능<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=마츠자카규+야키니쿠+M+호젠지점" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">마츠자카규 M 호젠지점<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 와규</span></div>
+                    <div class="item-desc">프리미엄 야키니쿠, 예약 가능<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=야키니쿠+리키마루+난바점" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">야키니쿠 리키마루 난바점<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 무한리필</span></div>
+                    <div class="item-desc">가성비 최고, 이노우에빌 2F<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=현품+호젠지+총본점" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">현품 호젠지 총본점<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 복어전골</span></div>
+                    <div class="item-desc">오사카 전통 복어전골<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=후쿠노마이+신사이바시점" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">후쿠노마이 신사이바시점<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 복어코스</span></div>
+                    <div class="item-desc">오사카 전통 복어 코스요리<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=스시+카츠야" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">스시 카츠야<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 스시</span></div>
+                    <div class="item-desc">고급 스시, 소에몬초 그린하우스 2F<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=오코노미야키+산페이" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">오코노미야키 산페이<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 로컬맛집</span></div>
+                    <div class="item-desc">도톤보리 로컬 맛집, 현장 대기<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=우동+타마타마" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">우동 타마타마<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 우동</span></div>
+                    <div class="item-desc">가볍게 즐기는 우동, 시로빌 1F<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Day 3 Group -->
+        <div class="group-section">
+            <h2 class="group-title">DAY 3 (5/17 일)</h2>
+            <div class="group-list">
+                <a href="https://www.google.com/maps/search/?api=1&query=우나기도코로+우마미" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">우나기도코로 우마미<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">점심 / 오사카성</span></div>
+                    <div class="item-desc">고급스러운 장어덮밥, 예약 가능<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=스시+히데마루" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">스시 히데마루<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">점심 / 오사카성</span></div>
+                    <div class="item-desc">현지 로컬 스시야, 벨즈힐<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=삿포로+수프카레+잭" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">삿포로 수프카레 잭<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">점심 / 오사카성</span></div>
+                    <div class="item-desc">독특한 수프카레, RK빌 1F<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=도쿠마사+모리노미야점" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">도쿠마사 모리노미야점<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">점심 / 오사카성</span></div>
+                    <div class="item-desc">현지인 추천 카레우동<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=우사미테이+마츠바야" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">우사미테이 마츠바야<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">저녁 / 도톤보리</span></div>
+                    <div class="item-desc">오사카 100년 전통 기츠네우동<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Day 4 Group -->
+        <div class="group-section">
+            <h2 class="group-title">DAY 4 (5/18 월)</h2>
+            <div class="group-list">
+                <a href="https://www.google.com/maps/search/?api=1&query=하나다코" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">하나다코<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">아침 / 우메다</span></div>
+                    <div class="item-desc">이른 아침 영업, 가장 간편함<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=규카츠+모토무라+루쿠아점" target="_blank" class="group-item">
+                    <div class="item-header"><span class="item-name">규카츠 모토무라<span class="cite-hidden">[cite: 3]</span></span><span class="item-badge">아침 / 우메다</span></div>
+                    <div class="item-desc">루쿠아오사카 10F, 오픈시간 주의<span class="cite-hidden">[cite: 3]</span></div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 정보 탭 -->
+    <div id="view-info" class="tab-content">
+        <div class="group-section">
+            <h2 class="group-title">✈️ 항공 & 숙소</h2>
+            <div class="group-list">
+                <div class="info-item">
+                    <strong>가는 편 (5/15)</strong>
+                    <span>에어부산 BX164 / 인천 09:40 ➔ 간사이 11:50<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+                <div class="info-item">
+                    <strong>오는 편 (5/18)</strong>
+                    <span>에어부산 BX171 / 간사이 12:50 ➔ 인천 15:00<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+                <div class="info-item">
+                    <strong>숙소 (3박)</strong>
+                    <span>한큐 그란레스파이어스 오사카 (우메다역 직결)<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="group-section">
+            <h2 class="group-title">🚋 교통 & 패스</h2>
+            <div class="group-list">
+                <div class="info-item">
+                    <strong>ICOCA 카드 (강력 추천)</strong>
+                    <span>보증금 500엔. 공항 창구에서 6명 전원 한 번에 발급하세요. 일정 내 모든 이동은 이 카드 1장으로 충분합니다.<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+                <div class="info-item">
+                    <strong>공항 ↔ 오사카역</strong>
+                    <span>JR 하루카 특급. (약 50분, 3,600엔). 가장 직관적이고 편리합니다.<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+                <div class="info-item">
+                    <strong>오사카 어메이징 패스 (선택)</strong>
+                    <span>2,800엔. 2일차나 3일차에 지하철 무제한 및 오사카성 무료 혜택을 모두 쓴다면 본전을 찾을 수 있습니다.<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+                <div class="info-item">
+                    <strong>JR 패스 (불필요)</strong>
+                    <span>이번 일정에서는 한큐선 등으로 충분히 커버되므로 가성비가 없습니다.<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="group-section">
+            <h2 class="group-title">💡 여행 실용 팁</h2>
+            <div class="group-list">
+                <div class="info-item">
+                    <strong>체력 분산 전략</strong>
+                    <span>도보는 5~7km로 제한하고 피로 시 택시 2대(3명씩)에 나눠 타는 것을 권장합니다. 점심 후 30분 카페 휴식을 꼭 챙기세요.<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+                <div class="info-item">
+                    <strong>5월 오사카 날씨</strong>
+                    <span>낮 22~26°C / 밤 15~18°C. 낮에는 반팔, 저녁에는 얇은 겉옷이 필수입니다. 교토의 돌바닥을 대비해 편한 운동화를 챙기세요.<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+                <div class="info-item">
+                    <strong>필수 준비 앱</strong>
+                    <span>Google Maps (도보/대중교통), Papago (메뉴판 즉시 번역), 네이버 환율 계산기.<span class="cite-hidden">[cite: 4]</span> 현금은 1인당 1만엔 정도 보유하는 것이 좋습니다.<span class="cite-hidden">[cite: 4]</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchMainTab('itinerary', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+            일정
+        </div>
+        <div class="nav-item" onclick="switchMainTab('restaurants', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.88 3.75 3.99V22h2.5v-9.01C11.34 12.88 13 11.12 13 9V2h-2v7zm5-7v8h2.5v8H21V2h-5z"/></svg>
+            맛집
+        </div>
+        <div class="nav-item" onclick="switchMainTab('info', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            정보
+        </div>
+    </nav>
+</div>
+
+<script>
+    function switchMainTab(tabId, element) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById('view-' + tabId).classList.add('active');
+
+        const titleMap = {
+            'itinerary': '오사카 가족 여행',
+            'restaurants': '전체 맛집 리스트',
+            'info': '여행 기본 정보'
+        };
+        document.getElementById('header-title').innerText = titleMap[tabId];
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showDay(dayId) {
+        document.querySelectorAll('.day-content').forEach(el => el.style.display = 'none');
+        document.getElementById(dayId).style.display = 'block';
+
+        document.querySelectorAll('.day-btn').forEach(el => el.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+</body>
+</html>
